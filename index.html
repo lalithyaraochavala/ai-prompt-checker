@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Prompt Quality Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--midnight:#0B0F18;--abyss:#141B2B;--bone:#EEE8DF;--blush:#EDA8A8;--mist:#C0CCD8;--slate:#6A7A8A;--parchment:#F5F1EB;--sand:#EAE4DC;--rose:#B85C5C;--dusk:#5A6A7A}
+body{font-family:'DM Sans',sans-serif;background:var(--midnight);color:var(--bone);min-height:100vh;line-height:1.6}
+header{border-bottom:0.5px solid rgba(238,232,223,0.08);padding:20px 40px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--blush)}
+.logo-text{font-family:'DM Mono',monospace;font-size:13px;color:var(--slate);letter-spacing:2px;text-transform:uppercase}
+.header-tag{font-family:'DM Mono',monospace;font-size:11px;color:var(--slate);letter-spacing:1px;padding:4px 12px;border:0.5px solid rgba(106,122,138,0.3);border-radius:20px}
+.hero{max-width:760px;margin:0 auto;padding:64px 40px 48px;text-align:center}
+.hero-eyebrow{font-family:'DM Mono',monospace;font-size:11px;color:var(--blush);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+.hero h1{font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(40px,5vw,64px);color:var(--bone);line-height:1.1;margin-bottom:16px}
+.hero h1 span{color:var(--blush)}
+.hero p{font-size:18px;color:var(--mist);max-width:520px;margin:0 auto 40px}
+.stats{display:flex;justify-content:center;gap:48px;margin-bottom:56px}
+.stat{text-align:center}
+.stat-n{font-family:'DM Serif Display',serif;font-size:32px;color:var(--blush);display:block}
+.stat-l{font-family:'DM Mono',monospace;font-size:10px;color:var(--slate);letter-spacing:2px;text-transform:uppercase}
+.main{max-width:760px;margin:0 auto;padding:0 40px 80px}
+.input-card{background:var(--abyss);border:0.5px solid rgba(238,232,223,0.08);border-radius:16px;padding:28px;margin-bottom:16px}
+.input-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--slate);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:block}
+textarea{width:100%;min-height:140px;background:var(--midnight);border:0.5px solid rgba(238,232,223,0.1);border-radius:10px;padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--bone);resize:vertical;line-height:1.7;transition:border-color 0.2s}
+textarea:focus{outline:none;border-color:rgba(237,168,168,0.3)}
+textarea::placeholder{color:var(--slate)}
+.input-footer{display:flex;align-items:center;gap:12px;margin-top:16px}
+.btn-analyse{padding:12px 28px;background:var(--blush);color:var(--midnight);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer;transition:all 0.2s}
+.btn-analyse:hover{background:#f0b8b8}
+.btn-analyse:disabled{opacity:0.4;cursor:not-allowed}
+.btn-clear{padding:12px 20px;background:transparent;color:var(--slate);font-family:'DM Sans',sans-serif;font-size:15px;border:0.5px solid rgba(106,122,138,0.3);border-radius:8px;cursor:pointer;transition:all 0.2s}
+.btn-clear:hover{border-color:var(--slate);color:var(--bone)}
+.char-count{margin-left:auto;font-family:'DM Mono',monospace;font-size:12px;color:var(--slate)}
+.examples{margin-bottom:32px}
+.examples-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--slate);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:6px 14px;background:transparent;color:var(--slate);font-family:'DM Sans',sans-serif;font-size:13px;border:0.5px solid rgba(106,122,138,0.3);border-radius:20px;cursor:pointer;transition:all 0.15s}
+.chip:hover{border-color:var(--blush);color:var(--blush)}
+.loading{display:none;align-items:center;gap:10px;padding:24px 0;color:var(--slate);font-size:14px}
+.loading.show{display:flex}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--blush);animation:pulse 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:0.2s}
+.dot:nth-child(3){animation-delay:0.4s}
+@keyframes pulse{0%,80%,100%{opacity:0.2}40%{opacity:1}}
+.results{display:none}
+.results.show{display:block}
+.overall{background:var(--abyss);border:0.5px solid rgba(238,232,223,0.08);border-radius:16px;padding:28px;display:flex;align-items:center;gap:24px;margin-bottom:16px}
+.score-ring{width:88px;height:88px;min-width:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-ring .n{font-family:'DM Serif Display',serif;font-size:32px;line-height:1}
+.score-ring .d{font-family:'DM Mono',monospace;font-size:11px;color:var(--slate);margin-top:2px}
+.overall-meta{flex:1}
+.overall-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--slate);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.verdict{font-family:'DM Serif Display',serif;font-style:italic;font-size:26px;margin-bottom:6px}
+.summary{font-size:14px;color:var(--mist);line-height:1.6}
+.dims{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.dim{background:var(--abyss);border:0.5px solid rgba(238,232,223,0.06);border-radius:12px;padding:20px 24px}
+.dim-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.dim-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.dim-name{font-size:15px;font-weight:500;color:var(--bone);flex:1}
+.dim-score{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.bar{height:3px;background:rgba(238,232,223,0.08);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
+.dim-feedback{font-size:13px;color:var(--mist);line-height:1.5}
+.dim-suggestion{margin-top:6px;font-size:12px;color:var(--slate);font-style:italic;padding-left:12px;border-left:2px solid rgba(237,168,168,0.3)}
+.improved-card{background:var(--abyss);border:0.5px solid rgba(238,232,223,0.08);border-radius:16px;overflow:hidden;margin-bottom:32px}
+.improved-head{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:0.5px solid rgba(238,232,223,0.06)}
+.improved-head-left{display:flex;flex-direction:column;gap:2px}
+.improved-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--blush);letter-spacing:2px;text-transform:uppercase}
+.improved-title{font-size:15px;font-weight:500;color:var(--bone)}
+.btn-copy{padding:6px 16px;background:transparent;color:var(--blush);font-family:'DM Mono',monospace;font-size:12px;border:0.5px solid rgba(237,168,168,0.3);border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:1px}
+.btn-copy:hover{background:rgba(237,168,168,0.1)}
+.btn-copy.done{color:#1D9E75;border-color:rgba(29,158,117,0.3)}
+.improved-body{padding:20px 24px;font-size:14px;color:var(--mist);line-height:1.8;white-space:pre-wrap;font-family:'DM Mono',monospace}
+footer{border-top:0.5px solid rgba(238,232,223,0.06);padding:32px 40px;text-align:center}
+.footer-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--slate);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.footer-name{font-family:'DM Serif Display',serif;font-style:italic;font-size:18px;color:var(--blush)}
+@media(max-width:600px){header{padding:16px 20px}.hero{padding:40px 20px 32px}.main{padding:0 20px 60px}.stats{gap:24px}.overall{flex-direction:column;text-align:center}footer{padding:24px 20px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <span class="logo-text">Prompt Checker</span>
+  </div>
+  <span class="header-tag">Free · No signup needed</span>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">AI Productivity Tool</div>
+  <h1>Is your prompt <span>actually good?</span></h1>
+  <p>Paste any AI prompt. Get a score across 5 dimensions and an improved version ready to use.</p>
+  <div class="stats">
+    <div class="stat"><span class="stat-n">5</span><span class="stat-l">Dimensions</span></div>
+    <div class="stat"><span class="stat-n">50</span><span class="stat-l">Points possible</span></div>
+    <div class="stat"><span class="stat-n">0</span><span class="stat-l">Signups needed</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="input-card">
+    <label class="input-label" for="prompt-input">Your prompt</label>
+    <textarea id="prompt-input" placeholder="Paste your AI prompt here — e.g. 'Write me an email to my manager requesting budget approval for a new tool'" oninput="updateChar()"></textarea>
+    <div class="input-footer">
+      <button class="btn-analyse" id="analyse-btn" onclick="analysePrompt()">Analyse prompt</button>
+      <button class="btn-clear" onclick="clearAll()">Clear</button>
+      <span class="char-count" id="char-count">0 characters</span>
+    </div>
+  </div>
+
+  <div class="examples">
+    <span class="examples-label">Try an example</span>
+    <div class="chips">
+      <div class="chip" onclick="loadEx('Write an email')">Weak prompt</div>
+      <div class="chip" onclick="loadEx('Help me with my presentation')">Average prompt</div>
+      <div class="chip" onclick="loadEx('Write a professional email to my manager requesting a 3-day extension on the Q2 report deadline. Reason: waiting on data from the finance team. Tone: respectful and brief. Under 100 words. Do not mention that the delay is our fault.')">Strong prompt</div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    <span>Analysing your prompt...</span>
+  </div>
+
+  <div class="results" id="results">
+    <div class="overall">
+      <div class="score-ring" id="score-ring">
+        <span class="n" id="score-n">0</span>
+        <span class="d">/ 50</span>
+      </div>
+      <div class="overall-meta">
+        <div class="overall-tag">Overall quality score</div>
+        <div class="verdict" id="verdict"></div>
+        <div class="summary" id="summary"></div>
+      </div>
+    </div>
+    <div class="dims" id="dims"></div>
+    <div class="improved-card">
+      <div class="improved-head">
+        <div class="improved-head-left">
+          <span class="improved-tag">Improved version</span>
+          <span class="improved-title">Ready to copy and use</span>
+        </div>
+        <button class="btn-copy" id="copy-btn" onclick="copyImproved()">Copy</button>
+      </div>
+      <div class="improved-body" id="improved-body"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-text">Built for Indian professionals · Free to use and share</div>
+  <div class="footer-name">Part of the AI Starter Kit</div>
+</footer>
+
+<script>
+const DIMS=[
+  {key:'clarity',name:'Clarity',emoji:'◎',color:'#378ADD',bg:'rgba(55,138,221,0.12)'},
+  {key:'context',name:'Context',emoji:'◈',color:'#1D9E75',bg:'rgba(29,158,117,0.12)'},
+  {key:'constraints',name:'Constraints',emoji:'◻',color:'#D85A30',bg:'rgba(216,90,48,0.12)'},
+  {key:'success',name:'Success definition',emoji:'◇',color:'#BA7517',bg:'rgba(186,117,23,0.12)'},
+  {key:'verification',name:'Verification risk',emoji:'△',color:'#A32D2D',bg:'rgba(163,45,45,0.12)'},
+];
+
+function updateChar(){
+  document.getElementById('char-count').textContent=document.getElementById('prompt-input').value.length+' characters';
+}
+
+function loadEx(text){
+  document.getElementById('prompt-input').value=text;
+  updateChar();
+}
+
+function clearAll(){
+  document.getElementById('prompt-input').value='';
+  updateChar();
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('loading').classList.remove('show');
+}
+
+function scorePrompt(prompt){
+  const p=prompt.toLowerCase().trim();
+  const words=p.split(/\s+/).length;
+
+  const clarity=(()=>{
+    if(words<4)return{score:1,feedback:'Too vague. The AI has no idea what you actually want.',suggestion:'Start with a clear action verb and name the specific deliverable.'};
+    if(words<8)return{score:3,feedback:'Partially clear but missing key details.',suggestion:'Add what format, length, or style you expect from the output.'};
+    const hasVerb=/write|create|summarise|summarize|explain|analyse|analyze|help|build|generate|review|improve|draft|list|compare|prepare|find/.test(p);
+    const hasNoun=/email|report|document|plan|summary|message|post|presentation|proposal|brief|meeting|strategy/.test(p);
+    if(hasVerb&&hasNoun&&words>=15)return{score:9,feedback:'Clearly defined task with specific action and output type.',suggestion:null};
+    if(hasVerb&&words>=10)return{score:7,feedback:'Clear action but output type could be more specific.',suggestion:'Specify the exact format you want the output delivered in.'};
+    return{score:5,feedback:'Can still be interpreted multiple ways.',suggestion:'Start with a clear action verb and name the exact deliverable.'};
+  })();
+
+  const context=(()=>{
+    const hasSit=/my|our|team|manager|client|company|colleague|meeting|project|role|background|for|audience|recipient|department/.test(p);
+    const hasPurpose=/because|reason|goal|objective|purpose|need|want|trying|in order to|so that/.test(p);
+    if(hasSit&&hasPurpose&&words>=20)return{score:9,feedback:'Good context — situation and purpose are both present.',suggestion:null};
+    if(hasSit&&words>=12)return{score:6,feedback:'Some context but the purpose is not clear.',suggestion:'Add why you need this and what you are ultimately trying to achieve.'};
+    if(words>=8&&hasSit)return{score:4,feedback:'Minimal context — the AI will make assumptions.',suggestion:'Tell the AI who this is for and why you need it.'};
+    return{score:2,feedback:'No context — the AI has no idea what situation this is for.',suggestion:'Add the audience, the situation, and what you are trying to achieve.'};
+  })();
+
+  const constraints=(()=>{
+    const hasLen=/word|character|brief|short|long|concise|under \d|max|maximum|limit|within/.test(p);
+    const hasTone=/tone|formal|informal|professional|casual|friendly|direct|polite|respectful|avoid|don't use|do not use/.test(p);
+    const hasExcl=/don't|do not|avoid|without|never|exclude|not include|leave out/.test(p);
+    const n=[hasLen,hasTone,hasExcl].filter(Boolean).length;
+    if(n>=2)return{score:9,feedback:'Clear constraints on length, tone, and exclusions.',suggestion:null};
+    if(n===1)return{score:6,feedback:'Some constraints but room to add more.',suggestion:'Add a word limit, a tone, and at least one thing to exclude.'};
+    return{score:2,feedback:'No constraints — the AI will make every decision itself.',suggestion:'Add a length limit, a tone preference, and one thing you do not want.'};
+  })();
+
+  const success=(()=>{
+    const hasFmt=/bullet|numbered|list|table|paragraph|section|heading|format|structure|layout|one sentence|short/.test(p);
+    const hasEx=/example|like|similar to|such as|e\.g\.|for instance|in the style/.test(p);
+    const hasQ=/clear|specific|concise|detailed|thorough|comprehensive|simple|accurate/.test(p);
+    const n=[hasFmt,hasEx,hasQ].filter(Boolean).length;
+    if(n>=2&&words>=15)return{score:9,feedback:'You have described what a good output looks like.',suggestion:null};
+    if(n>=1)return{score:6,feedback:'Partial definition of success — could be clearer.',suggestion:'Describe the format and one quality standard the output must meet.'};
+    return{score:3,feedback:'No definition of success — the AI cannot tell what good looks like.',suggestion:'Add the format, the length, and one quality you expect.'};
+  })();
+
+  const verification=(()=>{
+    const risky=/statistic|data|number|percentage|fact|research|study|report|survey|according|source|evidence|claim|figure|quote/.test(p);
+    const safe=/email|tone|style|rewrite|rephrase|brainstorm|help me think|explain|summarise|summarize/.test(p);
+    if(risky)return{score:3,feedback:'May produce facts or statistics — always verify before using.',suggestion:'Add: "Flag any claims that should be verified with a real source."'};
+    if(safe)return{score:9,feedback:'Low risk — unlikely to produce unverifiable claims.',suggestion:null};
+    return{score:6,feedback:'Medium risk — check for confident claims before using the output.',suggestion:'Ask the AI to flag anything that needs external verification.'};
+  })();
+
+  const dims={clarity,context,constraints,success,verification};
+  const total=Object.values(dims).reduce((s,d)=>s+d.score,0);
+  let verdict,summary,scoreColor,ringBg;
+  if(total>=40){verdict='Excellent prompt';summary='Well-structured and ready to use. The AI has everything it needs.';scoreColor='#1D9E75';ringBg='rgba(29,158,117,0.12)';}
+  else if(total>=28){verdict='Good prompt';summary='Solid foundation with a few gaps. Fix the lower scores for better results.';scoreColor='#BA7517';ringBg='rgba(186,117,23,0.12)';}
+  else if(total>=16){verdict='Needs work';summary='Several important elements are missing. The AI will fill gaps with assumptions.';scoreColor='#D85A30';ringBg='rgba(216,90,48,0.12)';}
+  else{verdict='Too vague';summary='This will produce generic output at best. Add context, constraints, and a clear task.';scoreColor='#A32D2D';ringBg='rgba(163,45,45,0.12)';}
+  return{dims,total,verdict,summary,scoreColor,ringBg};
+}
+
+function buildImproved(prompt,result){
+  const{dims}=result;
+  let lines=[prompt.trim()];
+  if(dims.constraints.score<6)lines.push('\nConstraints: Keep it concise and professional. Avoid jargon. Do not exceed 150 words unless necessary.');
+  if(dims.success.score<6)lines.push('\nFormat: Use clear paragraphs. Lead with the most important point. Make it easy to scan.');
+  if(dims.context.score<5)lines.push('\n[Add context: who is the audience and what is the situation?]');
+  if(dims.verification.score<6)lines.push('\nImportant: Flag any facts, statistics, or claims that should be verified with a real source before I use this output.');
+  return lines.join('');
+}
+
+function analysePrompt(){
+  const prompt=document.getElementById('prompt-input').value.trim();
+  if(!prompt||prompt.length<3)return;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('analyse-btn').disabled=true;
+  setTimeout(()=>{
+    const result=scorePrompt(prompt);
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('results').classList.add('show');
+    document.getElementById('analyse-btn').disabled=false;
+    const ring=document.getElementById('score-ring');
+    ring.style.background=result.ringBg;
+    const sn=document.getElementById('score-n');
+    sn.textContent=result.total;
+    sn.style.color=result.scoreColor;
+    document.getElementById('verdict').textContent=result.verdict;
+    document.getElementById('verdict').style.color=result.scoreColor;
+    document.getElementById('summary').textContent=result.summary;
+    const dimsEl=document.getElementById('dims');
+    dimsEl.innerHTML='';
+    DIMS.forEach(dim=>{
+      const d=result.dims[dim.key];
+      const pct=Math.round((d.score/10)*100);
+      const el=document.createElement('div');
+      el.className='dim';
+      el.innerHTML=`<div class="dim-top"><div class="dim-icon" style="background:${dim.bg};color:${dim.color}">${dim.emoji}</div><div class="dim-name">${dim.name}</div><div class="dim-score" style="color:${dim.color}">${d.score}/10</div></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${dim.color}"></div></div><div class="dim-feedback">${d.feedback}</div>${d.suggestion?`<div class="dim-suggestion">${d.suggestion}</div>`:''}`;
+      dimsEl.appendChild(el);
+    });
+    document.getElementById('improved-body').textContent=buildImproved(prompt,result);
+    document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+  },800);
+}
+
+function copyImproved(){
+  const text=document.getElementById('improved-body').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='Copied';
+    btn.classList.add('done');
+    setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('done');},2000);
+  });
+}
+
+document.getElementById('prompt-input').addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter')analysePrompt();
+});
+</script>
+</body>
+</html>
